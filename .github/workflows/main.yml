@@ -52,7 +52,9 @@ jobs:
           make -j$(nproc)
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: immortalwrt-ax6000
-          path: bin/targets/mediatek/mt7986/*.bin
+  uses: actions/upload-artifact@v4
+  with:
+    name: openwrt-ax6000-firmware
+    path: ./bin/
+    retention-days: 30
+
