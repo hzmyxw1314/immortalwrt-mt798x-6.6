@@ -6,25 +6,24 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - uses: actions/checkout@v4
 
-      - name: Prepare
+      - name: Prepare environment
         run: |
           sudo apt update
-          sudo apt install -y build-essential ccache ecj fastjar file g++ gawk \
-            gettext git java-propose-classpath libelf-dev libncurses5-dev \
-            libncursesw5-dev libssl-dev python3 python3-distutils python3-setuptools \
-            rsync subversion swig time unzip wget xsltproc zlib1g-dev
+          sudo apt install -y build-essential libncurses5-dev libssl-dev \
+            python3 python3-pip python3-setuptools git wget unzip \
+            libelf-dev libz-dev ccache rsync subversion swig time
 
-      - name: Config
+      - name: Configure
         run: |
-          cp defconfig/mt7986-ax6000-256m.config .config
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
+          make defconfig
+
+          # 基础必备插件
           echo "CONFIG_PACKAGE_luci-app-ttyd=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-upnp=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-wol=y" >> .config
@@ -34,20 +33,26 @@ jobs:
           echo "CONFIG_PACKAGE_luci-app-sqm=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-ksmbd=y" >> .config
           echo "CONFIG_PACKAGE_luci-theme-argon=y" >> .config
+
+          # WireGuard
           echo "CONFIG_PACKAGE_luci-app-wireguard=y" >> .config
           echo "CONFIG_PACKAGE_wireguard-tools=y" >> .config
+
+          # OpenClash
           echo "CONFIG_PACKAGE_luci-app-openclash=y" >> .config
+
+          # 打印服务
           echo "CONFIG_PACKAGE_luci-app-p910nd=y" >> .config
           echo "CONFIG_PACKAGE_p910nd=y" >> .config
 
           make defconfig
 
-      - name: Compile
+      - name: Compile firmware
         run: |
           make -j$(nproc)
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
         with:
           name: immortalwrt-ax6000
           path: bin/targets/mediatek/mt7986/*.bin
-
