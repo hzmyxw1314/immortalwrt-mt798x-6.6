@@ -1,0 +1,53 @@
+name: Build AX6000 237
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential ccache ecj fastjar file g++ gawk \
+            gettext git java-propose-classpath libelf-dev libncurses5-dev \
+            libncursesw5-dev libssl-dev python3 python3-distutils python3-setuptools \
+            rsync subversion swig time unzip wget xsltproc zlib1g-dev
+
+      - name: Config
+        run: |
+          cp defconfig/mt7986-ax6000-256m.config .config
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+          echo "CONFIG_PACKAGE_luci-app-ttyd=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-upnp=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-wol=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-nlbwmon=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-filetransfer=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-store=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-sqm=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-ksmbd=y" >> .config
+          echo "CONFIG_PACKAGE_luci-theme-argon=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-wireguard=y" >> .config
+          echo "CONFIG_PACKAGE_wireguard-tools=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-openclash=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-p910nd=y" >> .config
+          echo "CONFIG_PACKAGE_p910nd=y" >> .config
+
+          make defconfig
+
+      - name: Compile
+        run: |
+          make -j$(nproc)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: immortalwrt-ax6000
+          path: bin/targets/mediatek/mt7986/*.bin
+
